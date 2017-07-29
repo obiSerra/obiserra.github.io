@@ -1,0 +1,22 @@
+baseURL = "http://example.org/"
+languageCode = "en-us"
+title = "obiserra - blog"
+theme = "vec"
+
+
+[menu]
+  # Shown in the side menu.
+  [[menu.main]]
+    name = "post"
+    weight = 0
+    url = "/posts"
+
+[params]
+  Keywords = "programming"
+  Description = "There are some words to describe your site"
+  Avatar = "img/avatar-face.png"
+  SelfIntro = "Do. Or do not. There is no try."
+  Email = "obi.serra@gmail.com"
+
+  GithubID = "obiSerra"
+  LinkedInID = "obiserra"
