@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Posts on obiserra - blog</title>
+    <link>https://obiserra.github.io/posts/</link>
+    <description>Recent content in Posts on obiserra - blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Sat, 29 Jul 2017 23:43:07 +0200</lastBuildDate>
+    
+	<atom:link href="https://obiserra.github.io/posts/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Centos LAMP setup</title>
+      <link>https://obiserra.github.io/posts/lamp-centos/</link>
+      <pubDate>Sat, 29 Jul 2017 23:43:07 +0200</pubDate>
+      
+      <guid>https://obiserra.github.io/posts/lamp-centos/</guid>
+      <description>Start Once you are logged into the machine via ssh, you may want to check the OS you are working with, using the command
+$ cat /etc/*-release  The shell output should be something like
+CentOS release 6.3 (Final)  Now let’s start installing the rest of the stack
+Apache To install Apache, just run
+$ sudo yum install httpd  and type y when the system ask for confirm.</description>
+    </item>
+    
+  </channel>
+</rss>
