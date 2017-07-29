@@ -1,7 +1,7 @@
 ---
 title: "Centos LAMP setup"
 date: 2017-07-29T23:43:07+02:00
-draft: true
+draft: false
 ---
 
 ## Start
