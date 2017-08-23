@@ -6,10 +6,14 @@ theme = "vec"
 
 [menu]
   # Shown in the side menu.
-  [[menu.main]]
+  
+  [[menu.main]] 
     name = "post"
-    weight = 0
     url = "/posts"
+
+    name = "download_cv"
+    url = "https://github.com/obiSerra/resume/raw/master/output/Roberto_Serra_CV.pdf"
+
 
 [params]
   Keywords = "programming"
