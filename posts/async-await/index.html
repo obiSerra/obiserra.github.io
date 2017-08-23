@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title> Async Await &middot; obiserra - blog </title>
+  
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<meta name="generator" content="Hugo 0.25.1" />
+
+
+<link rel="stylesheet" href="https://obiserra.github.io/css/vec.css">
+
+
+<link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+<link rel="shortcut icon" href="/favicon.ico">
+
+
+<link href="" rel="alternate" type="application/rss+xml" title="obiserra - blog" />
+
+</head>
+
+<body>
+  <header>
+  <nav>
+    <ul>
+      
+      
+      <li class="pull-left ">
+        <a href="https://obiserra.github.io/">/home/obiserra - blog</a>
+      </li>
+      
+      
+      <li class="pull-left ">
+        <a href="/posts">~/post</a>
+      </li>
+      
+  
+      <li class="pull-right"><a href=""><i class="fa fa-rss"></i></a></li>
+    </ul>
+  </nav>
+</header>
+  <div class="content">
+    
+    
+    <section class="post">
+      <h1 class="post-title"><a href="https://obiserra.github.io/posts/async-await/">Async Await</a></h1>
+      <span class="post-date">Aug 23, 2017 </span>
+      <div class="post-content">
+        
+
+<h2 id="the-problem">The problem</h2>
+
+<p>Our node program has to perform some operation in a precise order.
+In details, we want to:</p>
+
+<ol>
+<li>read a json file</li>
+<li>compile an Handlebar template with the result data</li>
+<li>copy all the assets in the output directory</li>
+<li>produce an html and a pdf from the compiled html</li>
+</ol>
+
+<p>The first step is writing some asynchronous function that will return a Promise.
+Then we will put everything togheter using both <code>async</code>/<code>await</code> and the classic then chaining method</p>
+
+<h2 id="the-code">The code</h2>
+
+<h3 id="read-the-json-file-and-compiling-the-template">Read the json file and compiling the template:</h3>
+
+<p>Both functions performs asynchronous operations returning a promise: <code>readData</code> reads a json file, while <code>compileTemplate</code> compile the Handlebar template with the given data.</p>
+
+<pre><code class="language-javascript">
+function readData () {
+    return new Promise((resolve, reject) =&gt; {
+        fs.readFile(dataFile, 'utf8', (error, data) =&gt; {
+            if (error) reject(error);
+            resolve(JSON.parse(data));
+        });
+    });
+}
+
+
+function compileTemplate (data) {
+    return new RSVP.Promise((resolve, reject) =&gt; {
+        fs.readFile(templateDir + templateFile, 'utf-8', function(error, source) {
+            if (error) reject(error);
+            const  template = handlebars.compile(source);
+            resolve(template(data));
+        });
+    });
+}
+
+</code></pre>
+
+<p>Once we have our compiled template we need to copy all the assets and generate the output.</p>
+
+<p>Is important to notice that we must wait for all the assets to be copied before starting to generate the PDF, while for the html version we don&rsquo;t really care if all the assets has already been copied.</p>
+
+<p>The <code>copyAsset</code> function copy a file using node fs streams returning a promise, the <code>copyAllAssets</code> maps the previous function over an array of assets and using <code>Promise.all</code> return a promise that get resolved once all the file has been copied. <code>htmlOutput</code> and <code>pdfOutput</code> will generate the output file.</p>
+
+<pre><code class="language-javascript">
+function copyAsset (ast) {
+    return new Promise((resolve, reject) =&gt; {
+        const rStream = fs.createReadStream(templateDir + ast);
+        const wStream = fs.createWriteStream('output/' + ast);
+        
+        rStream.on('error', error =&gt; reject(error));
+        wStream.on('error', error =&gt; reject(error));
+
+        wStream.on('close', () =&gt; resolve());
+
+        rStream.pipe(wStream);
+
+    });
+}
+
+function copyAllAssets (asts) {
+    return Promise.all(assets.map(copyAsset));
+}
+  
+function pdfOutput (html) {
+    const options = { format: 'A4', base: basePath, timeout: 30000 };
+    return new RSVP.Promise((resolve, reject) =&gt; {
+        pdf.create(html, options).toFile(fileOut, (error, res) =&gt; {
+            if (error) reject(error);
+            resolve(res);
+        });
+    });
+}
+
+const htmlOutput = (html) =&gt; {
+    return new Promise ((resolve, reject) =&gt; {
+        const fileName = 'output/index.html';
+        const stream = fs.createWriteStream(fileName);
+
+        stream.once('open', () =&gt; stream.end(html));
+        stream.on('close', () =&gt; resolve());
+    });   
+};
+
+</code></pre>
+
+<h3 id="putting-everything-together">Putting everything together</h3>
+
+<p>We need to declare an async function, in order to use <code>await</code>.</p>
+
+<p><code>await</code> tells JavaScript to wait for the promise returned to be resolved before moving to the next instruction.</p>
+
+<p>Let&rsquo;s notice how we used <code>await</code> for all the asynchronous operation but for the <code>htmlOutput</code>: no other operation depends on the html generation.</p>
+
+<pre><code class="language-javascript">
+async function run () {
+    try {
+        
+        const data = await readData();
+        console.log('[+] Compiling the template');
+        const html = await compileTemplate(data);
+        htmlOutput(html);
+        console.log('[+] Copy assets');         
+        await copyAllAssets(assets);
+        console.log('[+] Generating PDF');
+        const res = await pdfOutput(html);
+
+        console.log(`[+] Done ${res.filename}`);
+    } catch (e) {
+        console.log(e);
+    }
+}
+
+</code></pre>
+
+<p>The classic version:</p>
+
+<pre><code class="language-javascript">
+readData()
+.then(d =&gt; {
+    console.log('[+] Compiling the template');
+    return compileTemplate(d)
+    })
+.then(html =&gt; { 
+    htmlOutput(html);
+    
+    console.log('[+] Copy assets');         
+    return copyAllAssets(assets).then(() =&gt; {
+    console.log('[+] Generating PDF');
+        return pdfOutput(html);
+    });
+})
+.then(() =&gt; console.log(`[+] Done ${res.filename}`))
+.catch(e =&gt; console.log(e))
+
+</code></pre>
+
+<p>Using <code>async</code> and <code>await</code> we can easily write asynchronous code in a sync fashion, simplyfing the flow of our software and making it more maintainable.</p>
+
+      </div>
+    </section>
+    
+    <section class="pagination clearfix">
+      
+      <a class="btn previous " href="https://obiserra.github.io/posts/lamp-centos/"> Centos LAMP setup </a> 
+       
+      
+    </section>
+    
+    
+  </div>
+  
+  <footer>
+  <div class="footer-info">
+    <p>
+      <a href="mailto:obi.serra@gmail.com?subject="><i class="fa fa-envelope-o"></i> obi.serra@gmail.com </a>
+      {
+        <a href="https://gohugo.io/" title="Hugo :: A fast and modern static website engine">Hugo 0.25.1</a>,
+        <a href="https://github.com/IvanChou/yii.im" title="vec">Vec</a> 
+      }
+      {<a href="http://creativecommons.org/licenses/by-nc-nd/3.0/" title="CC BY-NC-ND 3.0">CC BY-NC-ND 3.0</a>}
+    </p>
+  </div>
+</footer>
+  
+  <script src="https://obiserra.github.io/js/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad();
+  </script>
+  
+
+</body>
+
+</html>
