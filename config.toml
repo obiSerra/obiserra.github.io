@@ -10,7 +10,7 @@ theme = "vec"
   [[menu.main]] 
     name = "post"
     url = "/posts"
-
+  [[menu.main]] 
     name = "download_cv"
     url = "https://github.com/obiSerra/resume/raw/master/output/Roberto_Serra_CV.pdf"
 
