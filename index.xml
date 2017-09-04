@@ -6,10 +6,20 @@
     <description>Recent content on obiserra - blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Sat, 29 Jul 2017 23:43:07 +0200</lastBuildDate>
+    <lastBuildDate>Wed, 23 Aug 2017 22:00:07 +0200</lastBuildDate>
     
 	<atom:link href="https://obiserra.github.io/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>Async Await</title>
+      <link>https://obiserra.github.io/posts/async-await/</link>
+      <pubDate>Wed, 23 Aug 2017 22:00:07 +0200</pubDate>
+      
+      <guid>https://obiserra.github.io/posts/async-await/</guid>
+      <description>The problem Our node program has to perform some operation in a precise order. In details, we want to:
+ read a json file compile an Handlebar template with the result data copy all the assets in the output directory produce an html and a pdf from the compiled html  The first step is writing some asynchronous function that will return a Promise. Then we will put everything togheter using both async/await and the classic then chaining method</description>
+    </item>
     
     <item>
       <title>Centos LAMP setup</title>
