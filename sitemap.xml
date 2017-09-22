@@ -3,6 +3,11 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
+    <loc>https://obiserra.github.io/posts/rabbit-dead-letter-exchange/</loc>
+    <lastmod>2017-09-21T21:28:13+02:00</lastmod>
+  </url>
+  
+  <url>
     <loc>https://obiserra.github.io/posts/async-await/</loc>
     <lastmod>2017-08-23T22:00:07+02:00</lastmod>
   </url>
@@ -19,7 +24,7 @@
   
   <url>
     <loc>https://obiserra.github.io/posts/</loc>
-    <lastmod>2017-08-23T22:00:07+02:00</lastmod>
+    <lastmod>2017-09-21T21:28:13+02:00</lastmod>
     <priority>0</priority>
   </url>
   
@@ -30,7 +35,7 @@
   
   <url>
     <loc>https://obiserra.github.io/</loc>
-    <lastmod>2017-08-23T22:00:07+02:00</lastmod>
+    <lastmod>2017-09-21T21:28:13+02:00</lastmod>
     <priority>0</priority>
   </url>
   
