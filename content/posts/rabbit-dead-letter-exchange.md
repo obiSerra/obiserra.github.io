@@ -61,7 +61,7 @@ When you catch an exception throwed by the message handler you want to check how
 
 ``` clojure
 
-(if (< (get-in metadata [:headers "x-death" 0 "count"] 0) 10)
+(if (< (get (first (get-in metadata [:headers "x-death"])) "count" 0) 10)
     (lb/reject ch (:delivery-tag metadata {}) false)
     (handle-failure payload)
 )
@@ -92,7 +92,7 @@ Inside the metadata headers we can find a counter that RabbitMq increses each ti
                          response
                          )
                        (catch Exception e
-                         (if (< (get-in metadata [:headers "x-death" 0 "count"] 0) 10)
+                         (if (< (get (first (get-in metadata [:headers "x-death"])) "count" 0) 10)
                              (lb/reject ch (:delivery-tag metadata {}) false)
                              (handle-failure payload)
                          ))))]
