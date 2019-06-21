@@ -17,10 +17,9 @@ theme = "vec"
 
 [params]
   Keywords = "programming"
-  Description = "There are some words to describe your site"
+  Description = "Thoughts and stuff from just another programmer"
   Avatar = "img/avatar-face.png"
   SelfIntro = "Do. Or do not. There is no try."
   Email = "obi.serra@gmail.com"
-
   GithubID = "obiSerra"
   LinkedInID = "obiserra"
