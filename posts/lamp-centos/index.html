@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title> Centos LAMP setup &middot; obiserra - blog </title>
+  
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<meta name="generator" content="Hugo 0.40.1" />
+
+
+<link rel="stylesheet" href="https://obiserra.github.io/css/vec.css">
+
+
+<link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+<link rel="shortcut icon" href="/favicon.ico">
+
+
+<link href="" rel="alternate" type="application/rss+xml" title="obiserra - blog" />
+
+</head>
+
+<body>
+  <header>
+  <nav>
+    <ul>
+      
+      
+      <li class="pull-left ">
+        <a href="https://obiserra.github.io/">/home/obiserra - blog</a>
+      </li>
+      
+      
+      <li class="pull-left ">
+        <a href="https://github.com/obiSerra/resume/raw/master/output/Roberto_Serra_CV.pdf">~/download_cv</a>
+      </li>
+      
+      
+      <li class="pull-left ">
+        <a href="/posts">~/post</a>
+      </li>
+      
+  
+      <li class="pull-right"><a href=""><i class="fa fa-rss"></i></a></li>
+    </ul>
+  </nav>
+</header>
+  <div class="content">
+    
+    
+    <section class="post">
+      <h1 class="post-title"><a href="https://obiserra.github.io/posts/lamp-centos/">Centos LAMP setup</a></h1>
+      <span class="post-date">Jul 29, 2017 </span>
+      <div class="post-content">
+        
+
+<h2 id="start">Start</h2>
+
+<p>Once you are logged into the machine via ssh, you may want to check the OS you are working with, using the command</p>
+
+<pre><code>$ cat /etc/*-release
+</code></pre>
+
+<p>The shell output should be something like</p>
+
+<pre><code>CentOS release 6.3 (Final)
+</code></pre>
+
+<p>Now let’s start installing the rest of the stack</p>
+
+<h2 id="apache">Apache</h2>
+
+<p>To install Apache, just run</p>
+
+<pre><code>$ sudo yum install httpd
+</code></pre>
+
+<p>and type y when the system ask for confirm.</p>
+
+<p>Once done, you should be able to check that apache is installed by typing</p>
+
+<pre><code>$ which httpd
+</code></pre>
+
+<p>and getting something like</p>
+
+<pre><code>/usr/sbin/httpd
+</code></pre>
+
+<p>as response</p>
+
+<p>Now to start Apache just type</p>
+
+<pre><code>$ sudo service httpd start
+</code></pre>
+
+<p>or to restart it after some config updates</p>
+
+<pre><code>$ sudo service httpd restart
+</code></pre>
+
+<h2 id="mysql">MySQL</h2>
+
+<p>To install MySQL type</p>
+
+<pre><code>$ sudo yum install mysql-server
+</code></pre>
+
+<p>if you are working on a Centos 7 machine, note that MySQL is not listed inside the yum repository; you simply have to follow this guide <a href="https://www.digitalocean.com/community/tutorials/how-to-install-mysql-on-centos-7">Install mysql on Centos 7</a></p>
+
+<p>Once installed MySQL can be started with</p>
+
+<pre><code>$ sudo service mysqld start
+</code></pre>
+
+<p>And then setup the mysql password for the root user and other security config (you should provide a strong root password and answer Y for all the remaining question)</p>
+
+<pre><code>$ sudo /usr/bin/mysql_secure_installation
+</code></pre>
+
+<h2 id="php">PHP</h2>
+
+<p>Run this command to install PHP</p>
+
+<pre><code>$ sudo yum install php php-mysql
+</code></pre>
+
+<h2 id="config-iptables">Config iptables</h2>
+
+<p>You will probably need to update iptables, the Centos firewall, adding a new rule to accept incoming TCP request on port 80 (the 2 is needed to add the rule before the default last one that reject all other requests, making the http rule unreachable)</p>
+
+<pre><code>$ iptables -I INPUT 2 -m state --state NEW -m tcp -p tcp --dport 80 -j ACCEPT
+</code></pre>
+
+<p><em>Note: if you are using Amazon Aws, you may want to update the instance security configuration, that by default allow only ssh requests)</em></p>
+
+<p>Check everything works</p>
+
+<p>Open the config file, that should be</p>
+
+<pre><code>/etc/httpd/conf/httpd.conf
+</code></pre>
+
+<p>and look for the line starting with DocumentRoot, it should be something like</p>
+
+<pre><code>DocumentRoot &quot;/var/www/html&quot;
+</code></pre>
+
+<p>Now all you need to do is to upload or create a file inside the document root</p>
+
+<pre><code>$ echo &quot;&lt;?php phpinfo();&quot; &gt; info.php
+</code></pre>
+
+<p>and you can verify it by navigating with your browser to</p>
+
+<p>http://[your-public-ip]/info.php</p>
+
+<p><em>Note: Once you have done, remember to delete the info.php page, because it can give some useful information to malicious user that may want to hack your site.</em></p>
+
+      </div>
+    </section>
+    
+    <section class="pagination clearfix">
+       
+      
+      <a class="btn next " href="https://obiserra.github.io/posts/async-await/"> Async Await </a> 
+      
+    </section>
+    
+    
+  </div>
+  
+  <footer>
+  <div class="footer-info">
+    <p>
+      <a href="mailto:obi.serra@gmail.com?subject="><i class="fa fa-envelope-o"></i> obi.serra@gmail.com </a>
+      {
+        <a href="https://gohugo.io/" title="Hugo :: A fast and modern static website engine">Hugo 0.40.1</a>,
+        <a href="https://github.com/IvanChou/yii.im" title="vec">Vec</a> 
+      }
+      {<a href="http://creativecommons.org/licenses/by-nc-nd/3.0/" title="CC BY-NC-ND 3.0">CC BY-NC-ND 3.0</a>}
+    </p>
+  </div>
+</footer>
+  
+  <script src="https://obiserra.github.io/js/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad();
+  </script>
+  
+
+</body>
+
+</html>

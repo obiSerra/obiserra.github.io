@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title> Dead Letter Exchange in Clojure &middot; obiserra - blog </title>
+  
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<meta name="generator" content="Hugo 0.40.1" />
+
+
+<link rel="stylesheet" href="https://obiserra.github.io/css/vec.css">
+
+
+<link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+<link rel="shortcut icon" href="/favicon.ico">
+
+
+<link href="" rel="alternate" type="application/rss+xml" title="obiserra - blog" />
+
+</head>
+
+<body>
+  <header>
+  <nav>
+    <ul>
+      
+      
+      <li class="pull-left ">
+        <a href="https://obiserra.github.io/">/home/obiserra - blog</a>
+      </li>
+      
+      
+      <li class="pull-left ">
+        <a href="https://github.com/obiSerra/resume/raw/master/output/Roberto_Serra_CV.pdf">~/download_cv</a>
+      </li>
+      
+      
+      <li class="pull-left ">
+        <a href="/posts">~/post</a>
+      </li>
+      
+  
+      <li class="pull-right"><a href=""><i class="fa fa-rss"></i></a></li>
+    </ul>
+  </nav>
+</header>
+  <div class="content">
+    
+    
+    <section class="post">
+      <h1 class="post-title"><a href="https://obiserra.github.io/posts/rabbit-dead-letter-exchange/">Dead Letter Exchange in Clojure</a></h1>
+      <span class="post-date">Sep 21, 2017 </span>
+      <div class="post-content">
+        
+
+<h2 id="the-problem">The Problem</h2>
+
+<p>In one of the project that I&rsquo;m working on, we have several microservices that talk each other via RabbitMq messages.
+When the microservice A gets a message from the service B, it creates a new db record; when A gets a message from service C, it will look for an existing record and updates it. It is possible though that the message from C gets to A before the message from B, discarding the update or throwing an exception.</p>
+
+<p>This kind of scenario is quite common, because every microservice is indipendent from each other and RabbitMq messages are asychronous.</p>
+
+<p>To handle this kind of problem using RabbitMq we can setup a Dead Letter Exchange that will be used to wait and retry x number of time with the delivery and the processing of the message.</p>
+
+<h2 id="how-it-works">How it works</h2>
+
+<p>We will setup a Dead Letter Exchange where RabbitMq will automatically move all messages from a queue that has been &ldquo;dead lettered&rdquo;. This exchange will have a time to live that will ensure that after x milliseconds, the message will be moved again in original exchange with the original routing key. After a certain amount of attempts a custom handler will stop marking the message as &ldquo;dead lettered&rdquo; and publish it to a an error queue.</p>
+
+<h2 id="the-code">The Code</h2>
+
+<h3 id="original-exchange-and-queue">Original exchange and queue</h3>
+
+<pre><code class="language-clojure">
+(let [durable true exclusive false auto-delete false]
+    (le/declare ch ex &quot;topic&quot; {:durable durable})
+    (lq/declare ch queue-name {:durable durable 
+                               :exclusive exclusive 
+                               :auto-delete auto-delete 
+                               :routing-key routing-key 
+                               :arguments {&quot;x-dead-letter-exchange&quot; 
+                                           &quot;deadLetterX&quot;}})
+    (lq/bind ch queue-name ex {:routing-key routing-key}))
+
+</code></pre>
+
+<p>Please note that you need to pass as arguments <code>x-dead-letter-exchange</code> and the name of the exchange you want to use, in our example &ldquo;deadLetterX&rdquo;</p>
+
+<h3 id="dead-letter-exchange-and-retry-queue">Dead letter exchange and retry queue</h3>
+
+<pre><code class="language-clojure">(let [durable true exclusive false auto-delete false]
+ (le/declare ch &quot;deadLetterX&quot; &quot;topic&quot; {:durable durable})
+ (lq/declare ch &quot;retry_queue&quot; {:durable durable 
+                               :exclusive exclusive 
+                               :auto-delete auto-delete 
+                               :routing-key &quot;#&quot;
+                               :arguments {&quot;x-dead-letter-exchange&quot; ex 
+                                           &quot;x-message-ttl&quot; 30000)}})
+    (lq/bind ch &quot;retry_queue&quot; &quot;deadLetterX&quot; {:routing-key &quot;#&quot;}))
+
+</code></pre>
+
+<p>When we are creating the dead letter exchange, we want to pas as arguments <code>x-dead-letter-exchange</code> with the original exchange name; in addition we are also using <code>x-message-ttl</code> with a value of 30000 milliseconds to ensure that after 30 seconds, the message is moved to the original queue again.
+By setting a <code>routing-key</code> equal to &ldquo;#&rdquo;, the <code>retry_queue</code> will catch all messages in the dead letter exchange.</p>
+
+<h3 id="dead-lettering-a-message">Dead lettering a message</h3>
+
+<p>When you catch an exception throwed by the message handler you want to check how many times the message has been re-queued on the original queue.</p>
+
+<pre><code class="language-clojure">
+(if (&lt; (get (first (get-in metadata [:headers &quot;x-death&quot;])) &quot;count&quot; 0) 10)
+    (lb/reject ch (:delivery-tag metadata {}) false)
+    (handle-failure payload)
+)
+
+</code></pre>
+
+<p>Inside the metadata headers we can find a counter that RabbitMq increses each time a message get rejected; after a fixed amout of retry, we will stop to move the message to his original queue and pass the payload to an <code>handler-failure</code>.</p>
+
+<h2 id="all-the-code-together">All the code together</h2>
+
+<pre><code class="language-clojure">
+(defn bind-dead-letter
+  &quot;Bind a listener to a exchange&quot;
+  [connect-data routing-key ex queue-name handler-fn]
+  (try
+    (let [conn  (if (nil? connect-data) 
+                  (rmq/connect) 
+                  (rmq/connect connect-data))
+          ch (lch/open conn)
+          _handler (fn [ch metadata ^bytes payload]
+                     (try
+                       (let [response (-&gt; (String. payload &quot;UTF-8&quot;)
+                                          (json/read-str :key-fn keyword)
+                                          handler-fn
+                                          )]
+                         (lb/ack ch (:delivery-tag metadata {}))
+                         response
+                         )
+                       (catch Exception e
+                         (if (&lt; (get (first (get-in metadata [:headers &quot;x-death&quot;])) &quot;count&quot; 0) 10)
+                             (lb/reject ch (:delivery-tag metadata {}) false)
+                             (handle-failure payload)
+                         ))))]
+                         
+                         
+    (let [durable true exclusive false auto-delete false]
+        (le/declare ch ex &quot;topic&quot; {:durable durable})
+        (lq/declare ch queue-name {:durable durable 
+                                   :exclusive exclusive 
+                                   :auto-delete auto-delete 
+                                   :routing-key routing-key 
+                                   :arguments {&quot;x-dead-letter-exchange&quot; &quot;deadLetterX&quot;}})
+                                   
+        (lq/bind ch queue-name ex {:routing-key routing-key})
+
+        (le/declare ch &quot;deadLetterX&quot; &quot;topic&quot; {:durable durable})
+        (lq/declare ch &quot;retry_queue&quot; {:durable durable 
+                                      :exclusive exclusive 
+                                      :auto-delete auto-delete 
+                                      :routing-key &quot;#&quot;
+                                      :arguments {&quot;x-dead-letter-exchange&quot; ex 
+                                                  &quot;x-message-ttl&quot; 30000)}})
+        (lq/bind ch &quot;retry_queue&quot; &quot;deadLetterX&quot; {:routing-key &quot;#&quot;}))
+
+
+      (let [consumer-tag (lc/subscribe ch queue-name _handler)]
+        (fn []
+          (do
+            (log/info &quot;cancel consumer&quot;)
+            (lb/cancel ch consumer-tag)
+            (log/info &quot;close channel&quot;)
+            (rmq/close ch)
+            (log/info &quot;close connection&quot;)
+            (rmq/close conn)
+            )
+          )
+        )
+      )
+    (catch Exception e
+      (log/error e)
+      )))
+      
+</code></pre>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>By using RabbitMq&rsquo;s Dead Letter Exchange we can deal with race contions and other kind of errors and failures in a simple and reliable way.</p>
+
+      </div>
+    </section>
+    
+    <section class="pagination clearfix">
+      
+      <a class="btn previous " href="https://obiserra.github.io/posts/async-await/"> Async Await </a> 
+       
+      
+    </section>
+    
+    
+  </div>
+  
+  <footer>
+  <div class="footer-info">
+    <p>
+      <a href="mailto:obi.serra@gmail.com?subject="><i class="fa fa-envelope-o"></i> obi.serra@gmail.com </a>
+      {
+        <a href="https://gohugo.io/" title="Hugo :: A fast and modern static website engine">Hugo 0.40.1</a>,
+        <a href="https://github.com/IvanChou/yii.im" title="vec">Vec</a> 
+      }
+      {<a href="http://creativecommons.org/licenses/by-nc-nd/3.0/" title="CC BY-NC-ND 3.0">CC BY-NC-ND 3.0</a>}
+    </p>
+  </div>
+</footer>
+  
+  <script src="https://obiserra.github.io/js/highlight.min.js"></script>
+  <script>
+    hljs.initHighlightingOnLoad();
+  </script>
+  
+
+</body>
+
+</html>
