@@ -1,7 +1,8 @@
 ---
-title: "Async Await"
-date: 2017-08-23T22:00:07+02:00
-draft: false
+layout: post
+title:  "Async await"
+date:   2019-06-22 00:27:22 +0200
+categories: javascript async
 ---
 
 ## The problem

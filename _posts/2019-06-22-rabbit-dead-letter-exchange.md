@@ -1,7 +1,8 @@
 ---
+layout: post
 title: "Dead Letter Exchange in Clojure"
-date: 2017-09-21T21:28:13+02:00
-draft: false
+date:   2019-06-22 00:27:22 +0200
+categories: rabbitmq clojure
 ---
 ## The Problem
 

@@ -1,7 +1,8 @@
 ---
+layout: post
 title: "Centos LAMP setup"
-date: 2017-07-29T23:43:07+02:00
-draft: false
+date:   2019-06-22 00:27:22 +0200
+categories: LAMP devOps PHP Apache Centos
 ---
 
 ## Start
