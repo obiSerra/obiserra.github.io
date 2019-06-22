@@ -4,15 +4,11 @@ title: About
 permalink: /about/
 ---
 
-This is the base Jekyll theme. You can find out more info about customizing your Jekyll theme, as well as basic Jekyll usage documentation at [jekyllrb.com](https://jekyllrb.com/)
+I work as a senior software engineer at [Etiqa](https://etiqa.it/), a small but enlighten company in northern Italy.
 
-You can find the source code for Minima at GitHub:
-[jekyll][jekyll-organization] /
-[minima](https://github.com/jekyll/minima)
+I have two kids Matteo and Tommaso.
 
-You can find the source code for Jekyll at GitHub:
-[jekyll][jekyll-organization] /
-[jekyll](https://github.com/jekyll/jekyll)
+I have not much spare time and too many interests; some of them are:
+listen to podcasts and sci-fi audiobooks, watching educational and culinary videos on YouTube, drinking and brewing beer, cooking and eating, playing with electronics and physical computing.
 
-
-[jekyll-organization]: https://github.com/jekyll
+I am an atheist, a rationalist and strongly against any discrimination of race, gender, sexual orientation.
