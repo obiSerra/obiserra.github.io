@@ -8,7 +8,7 @@ categories: emacs organization time-management
 
 1. handle your todo list
 
-1. trak you time
+1. track you time
 
 1. recurring task
 
